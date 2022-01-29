@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+set -e
+
+readonly HOST_FILE="/etc/hosts"
+
+readonly WEBS_TO_BLOCK=(
+  "instagram.com"
+  "facebook.com"
+  "web.whatsapp.com"
+  "linkedin.com"
+  "twitter.com"
+)
+
+readonly TEST_TEXT=${WEBS_TO_BLOCK[0]}
+
+function add_hosts_to_file {
+  local -r hosts_file=$1
+  shift
+  local -ar hosts=("$@")
+
+  for host in "${hosts[@]}"; do
+    echo "127.0.0.1 " "$host" "www.""$host" | sudo tee -a "$hosts_file" > /dev/null
+  done
+}
+
+function remove_hosts_from_file {
+  local -r hosts_file=$1
+  shift
+  local -ar hosts=("$@")
+
+  for host in "${hosts[@]}"; do
+    sudo sed -i '' "/$host/d" "$hosts_file"
+  done
+}
+
+function start_working {
+  if grep -q "$TEST_TEXT" "$HOST_FILE"; then
+    echo "You just need to type faster!"
+  fi
+
+  add_hosts_to_file "$HOST_FILE" "${WEBS_TO_BLOCK[@]}"
+}
+
+function stop_working {
+  if ! (grep -q "$TEST_TEXT" "$HOST_FILE"); then
+    echo "You haven't started to work!"
+  fi
+
+  remove_hosts_from_file "$HOST_FILE" "${WEBS_TO_BLOCK[@]}"
+}
+
+function help {
+  echo "Usage: work [start|stop]";
+}
+
+function main {
+  if [ "$#" -ne 1 ]; then
+    help
+  fi
+
+  local key="$1"
+
+  case "$key" in
+    start)
+      start_working
+      ;;
+    stop)
+      stop_working
+      ;;
+    *)
+      help
+      ;;
+  esac
+}
+
+main "$@"
